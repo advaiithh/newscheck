@@ -89,10 +89,21 @@ Why this can scale:
 - Can swap retrieval layer to FAISS or production vector DB without changing pipeline stages
 - OCR path supports image-based misinformation (screenshots/posters)
 
-Known limitations:
-- Rule-based multilingual normalization can miss nuanced language
-- Small demo fact store limits coverage
-- Conflicting or outdated facts need stronger source ranking and timestamp awareness
+### Critical Limitations (Be Honest in Viva)
+- No real semantic understanding in this version:
+  - No LLM reasoning
+  - No semantic-embedding retrieval
+- Cannot reliably handle:
+  - Sarcasm
+  - Indirect claims
+  - Complex reasoning
+- Performance depends heavily on:
+  - Quality, coverage, and freshness of the fact database
+- "Truth" is approximate:
+  - Outputs are heuristic confidence-based verdicts, not authoritative truth
+- Not equivalent to production-grade systems such as:
+  - Google Fact Check
+  - Advanced LLM reasoning systems
 
 ## 8. Demo Explanation (For Judges)
 Suggested 2-3 minute demo flow:
@@ -143,6 +154,8 @@ Simple architecture, focused modules, and clear result reporting.
 - main.py: end-to-end pipeline, retrieval, verification, benchmark demo
 - preprocessing.py: optimization stage and reduction metrics
 - ml_classifier.py: train/evaluate TF-IDF + ML classifier and save model artifacts
+- api.py: FastAPI endpoints for text/image/video prediction
+- ui.py: Streamlit UI for text/image/video fact-check flow
 - README.md: documentation and demo playbook
 
 ## 13. Setup and Run
@@ -178,6 +191,16 @@ Test predict endpoint:
 ```bash
 curl -X POST "http://127.0.0.1:8000/predict" -H "Content-Type: application/json" -d "{\"text\":\"Breaking news: RBI is shutting all banks tomorrow\"}"
 ```
+
+### Run UI (Streamlit)
+```bash
+streamlit run ui.py
+```
+
+UI features:
+- Paste news text and check verdict
+- Upload image and OCR + check verdict
+- Upload video, sample frames with OCR, and check verdict
 
 ## 14. ML Fake-News Classification (Accuracy Track)
 To demonstrate model-based fake-news accuracy, train a text classifier on your labeled dataset.

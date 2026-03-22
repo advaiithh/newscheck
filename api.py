@@ -5,7 +5,13 @@ from typing import List
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
-from main import extract_text_from_image, process_batch, process_post
+from main import (
+    extract_text_from_image,
+    extract_text_from_video,
+    get_system_limitations,
+    process_batch,
+    process_post,
+)
 
 
 class PredictRequest(BaseModel):
@@ -18,7 +24,7 @@ class BatchPredictRequest(BaseModel):
 
 app = FastAPI(
     title="Automated Fact-Checker API",
-    version="1.0.0",
+    version="1.1.0",
     description="Inference API for optimized fake-news checking pipeline",
 )
 
@@ -26,6 +32,11 @@ app = FastAPI(
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/limitations")
+def limitations() -> dict:
+    return {"system_limitations": get_system_limitations()}
 
 
 @app.post("/predict")
@@ -50,6 +61,25 @@ def predict_image(file: UploadFile = File(...)) -> dict:
     try:
         extracted = extract_text_from_image(temp_path)
         return process_post(extracted, is_image=False)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
+@app.post("/predict-video")
+def predict_video(file: UploadFile = File(...)) -> dict:
+    suffix = os.path.splitext(file.filename or "")[1] or ".mp4"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp:
+        temp.write(file.file.read())
+        temp_path = temp.name
+
+    try:
+        extracted = extract_text_from_video(temp_path)
+        result = process_post(extracted, is_image=False)
+        result["input_video"] = file.filename or temp_path
+        return result
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     finally:
